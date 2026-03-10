@@ -48,7 +48,7 @@ INPUT_FILE = r"C:\Users\molec\OneDrive - University of Cambridge\Deane Lab\Exper
 
 # ── Output folder ─────────────────────────────────────────────
 # Set to a folder path, or None to auto-create next to the input file
-OUTPUT_DIR = None
+OUTPUT_DIR = r"C:\Users\molec\OneDrive - University of Cambridge\Deane Lab\mea-raster-asdr\Example plots"
 
 # ── Wells to analyse ──────────────────────────────────────────
 # List individual wells: ["A1", "B3", "C5"]
