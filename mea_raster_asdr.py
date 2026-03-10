@@ -53,7 +53,7 @@ OUTPUT_DIR = r"C:\Users\molec\OneDrive - University of Cambridge\Deane Lab\mea-r
 # ── Wells to analyse ──────────────────────────────────────────
 # List individual wells: ["A1", "B3", "C5"]
 # Or use ["ALL"] to process every well that has spikes
-WELLS = ["A1"]
+WELLS = ["D1"]
 
 # ── Time window (seconds) ─────────────────────────────────────
 # Only spikes within [TIME_START, TIME_END] will be shown.
