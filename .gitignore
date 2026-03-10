@@ -13,3 +13,4 @@ test_output/
 *.npz
 *.spk
 *.raw
+.claude/
