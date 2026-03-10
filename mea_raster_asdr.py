@@ -39,7 +39,7 @@ from scipy.signal import find_peaks
 
 
 # ╔══════════════════════════════════════════════════════════════╗
-# ║                       USER SECTION                          ║
+# ║                       USER SECTION                           ║
 # ╚══════════════════════════════════════════════════════════════╝
 
 # ── Input file ────────────────────────────────────────────────
@@ -53,7 +53,7 @@ OUTPUT_DIR = r"C:\Users\molec\OneDrive - University of Cambridge\Deane Lab\mea-r
 # ── Wells to analyse ──────────────────────────────────────────
 # List individual wells: ["A1", "B3", "C5"]
 # Or use ["ALL"] to process every well that has spikes
-WELLS = ["C2"]
+WELLS = ["A1"]
 
 # ── Time window (seconds) ─────────────────────────────────────
 # Only spikes within [TIME_START, TIME_END] will be shown.
@@ -67,7 +67,7 @@ REC_SECONDS = 360.0
 
 # ── Analysis parameters ───────────────────────────────────────
 BIN_MS       = 200.0   # ASDR bin width in ms  (MATLAB default = 200)
-ASDR_THRESH  = 10      # ASDR threshold — absolute spike count drawn as a red dashed line
+ASDR_THRESH  = 50      # ASDR threshold — absolute spike count drawn as a red dashed line
 THRESH_K     = 5.0     # Spike threshold = -K × σ_MAD  (MAD; .raw files only)
 
 # ── Figure settings ───────────────────────────────────────────
