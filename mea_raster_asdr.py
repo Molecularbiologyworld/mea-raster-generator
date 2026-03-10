@@ -44,11 +44,11 @@ from scipy.signal import find_peaks
 
 # ── Input file ────────────────────────────────────────────────
 # Supported: .spk  /  .raw  /  .npz
-INPUT_FILE = r"C:\Users\molec\OneDrive - University of Cambridge\Deane Lab\Experiment data\20250513_MEA_new ST3GAL5 neurons\MEA ANALAYSIS_EMMA\AxIS MATLAB Files\George.spk"
+INPUT_FILE = r"C:\Users"
 
 # ── Output folder ─────────────────────────────────────────────
 # Set to a folder path, or None to auto-create next to the input file
-OUTPUT_DIR = r"C:\Users\molec\OneDrive - University of Cambridge\Deane Lab\mea-raster-asdr\Example plots"
+OUTPUT_DIR = r"C:\Users"
 
 # ── Wells to analyse ──────────────────────────────────────────
 # List individual wells: ["A1", "B3", "C5"]
