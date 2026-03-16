@@ -1,4 +1,4 @@
-# mea-raster-asdr
+# mea-raster-generator
 
 Python tool for analysing multielectrode array (MEA) recordings from the **Axion Maestro** system.
 
