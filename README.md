@@ -22,10 +22,10 @@ Generates per-well figures matching the output of the MATLAB pipeline (`Axion_TV
 
 ## Installation
 
-### From PyPI (once published)
+### From PyPI
 
 ```bash
-pip install mea-raster-asdr
+pip install mea-raster-generator
 ```
 
 ### Local install (from cloned repo)
@@ -39,7 +39,7 @@ pip install .
 ```bash
 conda create -n mea python=3.10
 conda activate mea
-pip install mea-raster-asdr
+pip install mea-raster-generator
 ```
 
 Python 3.8+ required.
