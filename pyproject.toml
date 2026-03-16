@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mea-raster-generator"
+version = "0.1.0"
+description = "Raster plot and ASDR analysis for Axion Maestro MEA recordings"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "numpy>=1.22",
+    "matplotlib>=3.5",
+    "scipy>=1.8",
+]
+
+[tool.setuptools]
+py-modules = ["mea_raster_asdr"]
+
+[project.scripts]
+mea-raster-asdr = "mea_raster_asdr:main"

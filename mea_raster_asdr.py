@@ -22,6 +22,7 @@ DEPENDENCIES:
   pip install numpy matplotlib scipy
 """
 
+import argparse
 import csv
 import math
 import mmap
@@ -36,46 +37,6 @@ matplotlib.use("Agg")          # non-interactive — safe on any machine
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from scipy.signal import find_peaks
-
-
-# ╔══════════════════════════════════════════════════════════════╗
-# ║                       USER SECTION                           ║
-# ╚══════════════════════════════════════════════════════════════╝
-
-# ── Input file ────────────────────────────────────────────────
-# Supported: .spk  /  .raw  /  .npz
-INPUT_FILE = r"C:\Users"
-
-# ── Output folder ─────────────────────────────────────────────
-# Set to a folder path, or None to auto-create next to the input file
-OUTPUT_DIR = r"C:\Users"
-
-# ── Wells to analyse ──────────────────────────────────────────
-# List individual wells: ["A1", "B3", "C5"]
-# Or use ["ALL"] to process every well that has spikes
-WELLS = ["D1"]
-
-# ── Time window (seconds) ─────────────────────────────────────
-# Only spikes within [TIME_START, TIME_END] will be shown.
-# Set TIME_END = None to use the full recording duration.
-TIME_START = 0       # seconds
-TIME_END   = 420    # seconds  (e.g. 400  or  None for full recording)
-
-# ── Recording duration ────────────────────────────────────────
-# Only needed for .raw or .npz files.  .spk files detect this automatically.
-REC_SECONDS = 360.0
-
-# ── Analysis parameters ───────────────────────────────────────
-BIN_MS       = 200.0   # ASDR bin width in ms  (MATLAB default = 200)
-ASDR_THRESH  = 50      # ASDR threshold — absolute spike count drawn as a red dashed line
-THRESH_K     = 5.0     # Spike threshold = -K × σ_MAD  (MAD; .raw files only)
-
-# ── Figure settings ───────────────────────────────────────────
-DPI             = 300
-COMBINED_FIGURE = True    # True = raster + histogram combined; False = histogram only
-ASDR_Y_MAX      = 120    # Y-axis maximum for ASDR panels (e.g. 100); None = autoscale
-
-# ══════════════════════════════════════════════════════════════
 
 
 # ── Internal defaults (do not normally need to change) ────────
@@ -818,63 +779,106 @@ def compute_stats(
 
 
 # ═══════════════════════════════════════════════════════════
-#  MAIN
+#  PUBLIC API
 # ═══════════════════════════════════════════════════════════
 
-def main():
+def run(
+    input_file,
+    output_dir=None,
+    wells=None,
+    time_start=0.0,
+    time_end=0.0,
+    asdr_thresh=50,
+    combined=True,
+    asdr_y_max=None,
+    dpi=300,
+    rec_seconds=0.0,
+    bin_ms=200.0,
+    thresh_k=5.0,
+):
+    """
+    Run the MEA raster/ASDR analysis.
+
+    Parameters
+    ----------
+    input_file : str or Path
+        Path to .spk, .raw, or .npz recording file.
+    output_dir : str or Path, optional
+        Output directory. Defaults to a folder next to the input file.
+    wells : list of str, optional
+        Wells to analyse, e.g. ["A1", "B2"]. None or ["ALL"] = every well.
+    time_start : float
+        Start of time window in seconds (default: 0).
+    time_end : float
+        End of time window in seconds. 0 = full recording.
+    asdr_thresh : int
+        ASDR threshold spike count drawn as a red dashed line (default: 50).
+    combined : bool
+        Save combined raster+histogram figure (default: True).
+    asdr_y_max : float or None
+        Y-axis maximum for ASDR panels. None = autoscale.
+    dpi : int
+        Figure resolution in DPI (default: 300).
+    rec_seconds : float
+        Recording duration in seconds. Required for .raw and .npz files.
+    bin_ms : float
+        ASDR bin width in ms (default: 200).
+    thresh_k : float
+        Spike threshold multiplier K for MAD thresholding in .raw files (default: 5.0).
+    """
     # ── Resolve input file ─────────────────────────────────────────────────
-    infile = Path(INPUT_FILE)
+    infile = Path(input_file)
     if not infile.exists():
-        print(f"[ERROR] File not found: {infile}")
-        sys.exit(1)
+        raise FileNotFoundError(f"File not found: {infile}")
 
     suffix = infile.suffix.lower()
     if suffix not in (".spk", ".raw", ".npz"):
-        print(f"[ERROR] Unsupported file type '{suffix}'. Use .spk, .raw, or .npz")
-        sys.exit(1)
+        raise ValueError(f"Unsupported file type '{suffix}'. Use .spk, .raw, or .npz")
 
     # ── Resolve output directory ───────────────────────────────────────────
-    out_dir = Path(OUTPUT_DIR) if OUTPUT_DIR else infile.parent / "mea_raster_asdr_output"
+    out_dir = Path(output_dir) if output_dir else infile.parent / "mea_raster_asdr_output"
     out_dir.mkdir(parents=True, exist_ok=True)
     print(f"[OUTPUT] {out_dir}\n")
 
     # ── Resolve wells ──────────────────────────────────────────────────────
     all_wells = build_well_list()
-    if WELLS == ["ALL"] or WELLS == "ALL":
-        wells = all_wells
+    if wells is None or wells == ["ALL"]:
+        resolved_wells = all_wells
     else:
-        wells = [w.upper() for w in WELLS]
-        bad   = [w for w in wells if w not in all_wells]
+        resolved_wells = [w.upper() for w in wells]
+        bad = [w for w in resolved_wells if w not in all_wells]
         if bad:
-            print(f"[ERROR] Unknown wells: {bad}. Valid wells: {all_wells}")
-            sys.exit(1)
+            raise ValueError(f"Unknown wells: {bad}. Valid wells: {all_wells}")
 
     print(f"[INFO] Input    : {infile.name}")
-    print(f"[INFO] Wells    : {', '.join(wells)}")
-    print(f"[INFO] ASDR bin : {BIN_MS} ms")
+    print(f"[INFO] Wells    : {', '.join(resolved_wells)}")
+    print(f"[INFO] ASDR bin : {bin_ms} ms")
 
     # ── Load spike data ────────────────────────────────────────────────────
     print(f"\n[LOADING] {infile.name} ...")
     if suffix == ".raw":
-        print(f"[INFO] Duration: {REC_SECONDS} s  |  threshold: -{THRESH_K} x sigma_MAD")
-        spike_data   = load_spikes_from_raw(infile, wells, REC_SECONDS, THRESH_K)
-        total_time_s = REC_SECONDS
+        if rec_seconds <= 0:
+            raise ValueError("rec_seconds is required for .raw files")
+        print(f"[INFO] Duration: {rec_seconds} s  |  threshold: -{thresh_k} x sigma_MAD")
+        spike_data   = load_spikes_from_raw(infile, resolved_wells, rec_seconds, thresh_k)
+        total_time_s = rec_seconds
     elif suffix == ".spk":
-        spike_data, total_time_s = load_spikes_from_spk(infile, wells)
+        spike_data, total_time_s = load_spikes_from_spk(infile, resolved_wells)
         print(f"[INFO] Inferred recording duration: {total_time_s:.1f} s")
     else:  # .npz
-        spike_data, total_time_s = load_spikes_from_npz(infile, wells, REC_SECONDS)
+        if rec_seconds <= 0:
+            raise ValueError("rec_seconds is required for .npz files")
+        spike_data, total_time_s = load_spikes_from_npz(infile, resolved_wells, rec_seconds)
 
     print(f"[DONE loading]\n")
 
     # ── Resolve time window ────────────────────────────────────────────────
-    t_start = float(TIME_START)
-    t_end   = float(TIME_END) if TIME_END is not None else total_time_s
-    t_end   = min(t_end, total_time_s)   # clamp to actual recording length
+    t_start = float(time_start)
+    t_end   = float(time_end) if time_end > 0 else total_time_s
+    t_end   = min(t_end, total_time_s)
 
     if t_start >= t_end:
-        print(f"[ERROR] TIME_START ({t_start} s) must be less than TIME_END ({t_end} s)")
-        sys.exit(1)
+        raise ValueError(f"time_start ({t_start} s) must be less than time_end ({t_end} s)")
 
     print(f"[INFO] Time window: {t_start:.1f} s  to  {t_end:.1f} s\n")
 
@@ -882,19 +886,14 @@ def main():
     stem      = infile.stem
     all_stats = []
 
-    for well in wells:
+    for well in resolved_wells:
         if well not in spike_data:
             print(f"[SKIP] {well} — no data")
             continue
 
         st = spike_data[well]
-        # Count spikes in time window
-        total_sp = sum(
-            int(((t >= t_start) & (t <= t_end)).sum()) for t in st.values()
-        )
-        active_e = sum(
-            1 for t in st.values() if ((t >= t_start) & (t <= t_end)).any()
-        )
+        total_sp = sum(int(((t >= t_start) & (t <= t_end)).sum()) for t in st.values())
+        active_e = sum(1 for t in st.values() if ((t >= t_start) & (t <= t_end)).any())
 
         if total_sp == 0:
             print(f"[SKIP] {well} — 0 spikes in time window")
@@ -902,26 +901,24 @@ def main():
 
         print(f"[WELL {well}]  {total_sp} spikes in window  |  {active_e}/16 active electrodes")
 
-        if COMBINED_FIGURE:
+        if combined:
             plot_combined(
                 well=well, spike_times=st,
                 time_start_s=t_start, time_end_s=t_end,
                 out_path=out_dir / f"{stem}_{well}_raster_histogram.png",
-                bin_size_ms=BIN_MS, asdr_thresh=ASDR_THRESH,
-                y_max=ASDR_Y_MAX, dpi=DPI,
+                bin_size_ms=bin_ms, asdr_thresh=asdr_thresh,
+                y_max=asdr_y_max, dpi=dpi,
             )
 
         plot_asdr_standalone(
             well=well, spike_times=st,
             time_start_s=t_start, time_end_s=t_end,
             out_path=out_dir / f"{stem}_{well}_asdr_histogram.png",
-            bin_size_ms=BIN_MS, asdr_thresh=ASDR_THRESH,
-            y_max=ASDR_Y_MAX, dpi=DPI,
+            bin_size_ms=bin_ms, asdr_thresh=asdr_thresh,
+            y_max=asdr_y_max, dpi=dpi,
         )
 
-        all_stats.append(
-            compute_stats(well, st, t_start, t_end, BIN_MS, ASDR_THRESH)
-        )
+        all_stats.append(compute_stats(well, st, t_start, t_end, bin_ms, asdr_thresh))
 
     if all_stats:
         stats_path = out_dir / f"{stem}_stats.csv"
@@ -932,6 +929,90 @@ def main():
         print(f"\n[STATS] {stats_path.name}")
 
     print(f"\n[ALL DONE]  Output: {out_dir}")
+
+
+# ═══════════════════════════════════════════════════════════
+#  CLI ENTRY POINT
+# ═══════════════════════════════════════════════════════════
+
+def main():
+    parser = argparse.ArgumentParser(
+        prog="mea-raster-asdr",
+        description="Raster plot and ASDR analysis for Axion Maestro MEA recordings.",
+    )
+    parser.add_argument(
+        "input_file", metavar="INPUT_FILE",
+        help="Path to .spk, .raw, or .npz recording file",
+    )
+    parser.add_argument(
+        "--output-dir", default=None,
+        help="Output directory (default: auto-create folder next to input file)",
+    )
+    parser.add_argument(
+        "--wells", nargs="+", default=["ALL"], metavar="WELL",
+        help='Wells to analyse, e.g. --wells A1 B2 C3, or ALL (default: ALL)',
+    )
+    parser.add_argument(
+        "--time-start", type=float, default=0.0,
+        help="Start of time window in seconds (default: 0)",
+    )
+    parser.add_argument(
+        "--time-end", type=float, default=0.0,
+        help="End of time window in seconds; 0 = full recording (default: 0)",
+    )
+    parser.add_argument(
+        "--asdr-thresh", type=int, default=50,
+        help="ASDR threshold spike count drawn as red dashed line (default: 50)",
+    )
+    parser.add_argument(
+        "--combined", action="store_true", default=True,
+        help="Save combined raster+histogram figure (default: on)",
+    )
+    parser.add_argument(
+        "--no-combined", dest="combined", action="store_false",
+        help="Save ASDR histogram only, skip combined raster figure",
+    )
+    parser.add_argument(
+        "--asdr-y-max", type=float, default=0.0,
+        help="Y-axis maximum for ASDR panels; 0 = autoscale (default: 0)",
+    )
+    parser.add_argument(
+        "--dpi", type=int, default=300,
+        help="Figure resolution in DPI (default: 300)",
+    )
+    parser.add_argument(
+        "--rec-seconds", type=float, default=0.0,
+        help="Recording duration in seconds; required for .raw and .npz files",
+    )
+    parser.add_argument(
+        "--bin-ms", type=float, default=200.0,
+        help="ASDR bin width in ms (default: 200)",
+    )
+    parser.add_argument(
+        "--thresh-k", type=float, default=5.0,
+        help="Spike threshold multiplier K for MAD thresholding in .raw files (default: 5.0)",
+    )
+
+    args = parser.parse_args()
+
+    try:
+        run(
+            input_file  = args.input_file,
+            output_dir  = args.output_dir,
+            wells       = args.wells,
+            time_start  = args.time_start,
+            time_end    = args.time_end,
+            asdr_thresh = args.asdr_thresh,
+            combined    = args.combined,
+            asdr_y_max  = args.asdr_y_max if args.asdr_y_max > 0 else None,
+            dpi         = args.dpi,
+            rec_seconds = args.rec_seconds,
+            bin_ms      = args.bin_ms,
+            thresh_k    = args.thresh_k,
+        )
+    except (FileNotFoundError, ValueError) as e:
+        print(f"[ERROR] {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
