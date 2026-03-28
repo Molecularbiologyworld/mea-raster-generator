@@ -1,4 +1,4 @@
-from mea_raster_asdr import run
+from mea_raster_generator import run
 
 run(
     input_file  = r"C:\path\to\your_recording.spk",

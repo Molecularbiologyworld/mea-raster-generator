@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-mea_raster_asdr.py
-==================
+mea_raster_generator.py
+=======================
 Python replication of the MATLAB MEA analysis pipeline (Axion_TVAloopv3 / v4).
 
 Generates per-well figures with:
@@ -836,7 +836,7 @@ def run(
         raise ValueError(f"Unsupported file type '{suffix}'. Use .spk, .raw, or .npz")
 
     # ── Resolve output directory ───────────────────────────────────────────
-    out_dir = Path(output_dir) if output_dir else infile.parent / "mea_raster_asdr_output"
+    out_dir = Path(output_dir) if output_dir else infile.parent / "mea_raster_generator_output"
     out_dir.mkdir(parents=True, exist_ok=True)
     print(f"[OUTPUT] {out_dir}\n")
 
@@ -937,7 +937,7 @@ def run(
 
 def main():
     parser = argparse.ArgumentParser(
-        prog="mea-raster-asdr",
+        prog="mea-raster-generator",
         description="Raster plot and ASDR analysis for Axion Maestro MEA recordings.",
     )
     parser.add_argument(

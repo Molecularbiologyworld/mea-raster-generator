@@ -49,7 +49,7 @@ Python 3.8+ required.
 ## Usage
 
 ```
-mea-raster-asdr INPUT_FILE [options]
+mea-raster-generator INPUT_FILE [options]
 ```
 
 ### Positional argument
@@ -62,7 +62,7 @@ mea-raster-asdr INPUT_FILE [options]
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `--output-dir DIR` | auto | Output directory (default: `mea_raster_asdr_output/` next to input file) |
+| `--output-dir DIR` | auto | Output directory (default: `mea_raster_generator_output/` next to input file) |
 | `--wells WELL [WELL ...]` | `ALL` | Wells to analyse, e.g. `A1 B2 C3`, or `ALL` |
 | `--time-start FLOAT` | `0` | Start of time window in seconds |
 | `--time-end FLOAT` | `0` | End of time window in seconds; `0` = full recording |
@@ -78,23 +78,23 @@ mea-raster-asdr INPUT_FILE [options]
 
 ```bash
 # Analyse well D1 from an .spk file, time window 0–420 s
-mea-raster-asdr recording.spk --wells D1 --time-end 420 --asdr-thresh 50
+mea-raster-generator recording.spk --wells D1 --time-end 420 --asdr-thresh 50
 
 # Analyse all wells, autoscale Y axis
-mea-raster-asdr recording.spk --wells ALL --time-end 600
+mea-raster-generator recording.spk --wells ALL --time-end 600
 
 # Raw file (rec-seconds required), save to custom output directory
-mea-raster-asdr recording.raw --rec-seconds 360 --wells A1 B1 --output-dir ./results
+mea-raster-generator recording.raw --rec-seconds 360 --wells A1 B1 --output-dir ./results
 
 # ASDR histogram only (no raster)
-mea-raster-asdr recording.spk --wells D1 --no-combined
+mea-raster-generator recording.spk --wells D1 --no-combined
 ```
 
 ---
 
 ## Output
 
-All figures are saved to `mea_raster_asdr_output/` next to the input file (or to `--output-dir` if set):
+All figures are saved to `mea_raster_generator_output/` next to the input file (or to `--output-dir` if set):
 
 | File | Description |
 |------|-------------|
